@@ -2,7 +2,6 @@
 
 #include "nkICommand.idl"
 #include "nkIMenu.idl"
-#include "nkIMenuSeparator.idl"
 #include "nkIWindow.idl"
 
 

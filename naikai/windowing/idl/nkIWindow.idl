@@ -9,5 +9,5 @@ interface nkIWindow : nsISupports
   attribute boolean fullscreen;
   attribute boolean visible;
 
-  void setMenu(nkIMenu menu);
+  void setMenu(in nkIMenu menu);
 };

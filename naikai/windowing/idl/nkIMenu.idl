@@ -1,5 +1,4 @@
 #include "nsISupports.idl"
-#include "nkIMenuSeparator.idl"
 #include "nkIMenuItem.idl"
 
 
