@@ -20,10 +20,13 @@ MODULE_INC = ''
 for m in MODULES:
     MODULE_INC += ' -I ' + path.join(m, 'idl') + ' '
 
+
 # generate builders
 TypeLibrary = Builder(name = 'TypeLibrary',
 		      action = 'xpidl -I ' + MOZ_IDL + MODULE_INC + ' -m typelib -e $TARGET $SOURCES')
-Builders = [TypeLibrary]
+InterfaceHeader = Builder(name = 'InterfaceHeader',
+		      action = 'xpidl -I ' + MOZ_IDL + MODULE_INC + ' -m header -e $TARGET $SOURCES')
+Builders = [TypeLibrary, InterfaceHeader]
 
 # create an environment
 env = Environment(ENV = { 'PATH': os.environ['PATH'] }, BUILDERS = Builders)
@@ -35,5 +38,7 @@ for m in MODULES:
         for i in IDL_FILES:
             env.TypeLibrary(target = path.join(BUILD, 'components', i + '.xpt'),
                             source = path.join(m, 'idl', i + '.idl'))
+	    env.InterfaceHeader(target = path.join(BUILD, 'include', i + '.h'),
+				source = path.join(m, 'idl', i + '.idl'))
     except IOError:
         sys.stderr.write("Skipping module: %s\n" % m)
