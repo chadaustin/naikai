@@ -4,6 +4,31 @@ import os
 import sys
 
 
+### LOAD BUILD CONFIGURATION ###
+
+try:
+    BUILD_RC = os.environ['NAIKAI_BUILD_CFG']
+except:
+    BUILD_RC = path.join(os.environ['HOME'], 'naikai_build')
+
+try:
+    execfile(BUILD_RC)
+except:
+    print "Can't open build configuration file!"
+    print "Set NAIKAI_BUILD_CFG or put a configuration file in"
+    print "$HOME/naikai_build."
+    sys.exit()
+
+# make sure we have all of the necessary variables
+try:
+    NK_MOZ_DIST
+    NK_MOZ_DIST_BIN
+except:
+    print "NK_MOZ_DIST or NK_MOZ_DIST_BIN were not set!  You must set them"
+    print "in the build configuration file!"
+    sys.exit()
+
+
 ### BUILD VARIABLES ###
 
 # build/dist directory
@@ -11,26 +36,18 @@ BUILD = 'build'
 MODULES = [ 'base', 'nrun', 'test', 'windowing' ]
 
 
-
-# find where Mozilla IDL files are installed
-if os.environ.has_key('MOZ_IDL'):
-    MOZ_IDL = os.environ['MOZ_IDL']
-else:
-    if os.environ.has_key('HOME'):
-        MOZ_IDL = os.environ['HOME'] + '/mozilla/idl'
-    else:
-        MOZ_IDL = '/mozilla/idl'
-
-XPIDL_COMMAND = 'xpidl -I ' + MOZ_IDL + ' $IDL_INCLUDE'
+XPIDL_COMMAND = 'xpidl -I ' + path.join(NK_MOZ_DIST, 'idl') + ' $IDL_INCLUDE'
 
 # set default target
 Default(BUILD)
 
-MOZ_INCLUDE = '/I D:/mozilla/mozilla/dist/include/xpcom '
-MOZ_INCLUDE += '/I D:/mozilla/mozilla/dist/include/nspr '
-MOZ_INCLUDE += '/I D:/mozilla/mozilla/dist/include/string '
+MOZ_INCLUDE = reduce(
+  lambda a, b: a + '-I ' + path.join(NK_MOZ_DIST, 'include', b) + ' ',
+  ['xpcom', 'nspr', 'string'], '')
 
-# generate builders
+
+### BUILDERS ###
+
 Builders = [
     Builder(
         name = 'TypeLibrary',
@@ -44,18 +61,33 @@ Builders = [
                  ' $INCLUDE /Fo$TARGET $SOURCES'),
     Builder(
 	name = 'Program',
-        action = 'LINK /nologo /LIBPATH:$LIBPATH /out:$TARGET $SOURCES $LIBRARIES'),
+        action = 'LINK /nologo /LIBPATH:$LIBPATH ' +
+                 '/out:$TARGET $SOURCES $LIBRARIES'),
     Builder(
 	name = 'Component',
-	action = 'LINK /nologo /LIBPATH:$LIBPATH /DLL /out:$TARGET $SOURCES $LIBRARIES'),
+	action = 'LINK /nologo /LIBPATH:$LIBPATH /DLL ' +
+                 '/out:$TARGET $SOURCES $LIBRARIES'),
 ]
+
+
+### SCANNERS ###
+
+#class IDLScanner(SCons.Scanner.Recursive):
+#Scanners = [
+#    Scons.Scanner.C.CScan(),
+#    IDLScanner(SCons.Scanner.Recursive)
+#	),
+#]
+
 
 # create an environment
 env = Environment(
     ENV = os.environ,
     BUILDERS = Builders,
-    LIBPATH = 'D:/mozilla/mozilla/dist/WIN32_O.OBJ/lib')
+#    SCANNERS = Scanners,
+    LIBPATH = path.join(NK_MOZ_DIST_BIN, 'lib'))
 
+# process each module
 for m in MODULES:
     try:
 	# defaults
@@ -64,9 +96,7 @@ for m in MODULES:
 	PROGRAMS   = []
 	COMPONENTS = []
 
-	file = open(m + '/module.py', 'r')
-	exec file in locals()
-	file.close()
+	execfile(path.join(m, 'module.py'), locals())
 
       	# all modules 'require' themselves
 	idl_include = ''
@@ -100,7 +130,7 @@ for m in MODULES:
 		objects.append(o)
 
 	    e.Program(target = path.join(BUILD, 'bin', i['target'] + '.exe'),
-	              source = objects)
+		      source = objects)
 
 	# build module components
 	for i in COMPONENTS:

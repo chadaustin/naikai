@@ -13,7 +13,6 @@ interface nkIWindowingService : nsISupports
 {
   nkIWindow        createWindow();
   nkIMenu          createMenu();
-  nkIMenuItem      createMenuItem(in nkICommand command);
 
   attribute nkICommand onIdle;
 

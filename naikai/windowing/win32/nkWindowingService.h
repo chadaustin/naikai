@@ -2,6 +2,7 @@
 #define NAIKAI_WINDOWING_SERVICE_H
 
 
+#include "nsCOMPtr.h"
 #include "nkIWindowingService.h"
 
 
@@ -19,6 +20,9 @@ public:
 
   NS_DECL_ISUPPORTS
   NS_DECL_NKIWINDOWINGSERVICE
+
+private:
+  nsCOMPtr<nkICommand> m_on_idle;
 };
 
 

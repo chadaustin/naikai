@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "nsCOMPtr.h"
 #include "nsIGenericFactory.h"
 #include "nsIServiceManagerUtils.h"
@@ -6,6 +7,27 @@
 #include "nkIRunnable.h"
 #include "nkIWindow.h"
 #include "nkIWindowingService.h"
+
+
+class ExitCommand : public nkICommand
+{
+public:
+  ExitCommand() {
+    NS_INIT_REFCNT();
+  }
+
+  NS_DECL_ISUPPORTS
+  NS_DECL_NKICOMMAND
+};
+
+NS_IMPL_ISUPPORTS1(ExitCommand, nkICommand)
+
+NS_IMETHODIMP
+ExitCommand::Execute(nsISupports* /*caller*/)
+{
+  exit(0);
+  return NS_OK;
+}
 
 
 // 028baccc-1dd2-11b2-b297-9e0223120227
@@ -55,7 +77,19 @@ Runnable::Run()
     return NS_ERROR_FAILURE;
   }
 
-  menu->AppendItem(NS_LITERAL_STRING("Menu!").get(), NULL);
+  nsCOMPtr<nkIMenu> submenu;
+  rv = ws->CreateMenu(getter_AddRefs(submenu));
+  if (!submenu || NS_FAILED(rv)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  submenu->AppendItem(NS_LITERAL_STRING("New").get(), NULL);
+  submenu->AppendSeparator();
+
+  nsCOMPtr<nkICommand> ec(new ExitCommand());
+  submenu->AppendItem(NS_LITERAL_STRING("Exit").get(), ec);
+
+  menu->AppendSubMenu(NS_LITERAL_STRING("Game").get(), submenu);
 
   rv = window->SetMenu(menu);
   if (NS_FAILED(rv)) {

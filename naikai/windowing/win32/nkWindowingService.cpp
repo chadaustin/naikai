@@ -72,23 +72,18 @@ nkWindowingService::CreateMenu(nkIMenu** rv)
 
 
 NS_IMETHODIMP
-nkWindowingService::CreateMenuItem(nkICommand* command, nkIMenuItem** rv)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-
-NS_IMETHODIMP
 nkWindowingService::GetOnIdle(nkICommand** on_idle)
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  *on_idle = m_on_idle;
+  return NS_OK;
 }
 
 
 NS_IMETHODIMP
 nkWindowingService::SetOnIdle(nkICommand* on_idle)
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  m_on_idle = on_idle;
+  return NS_OK;
 }
 
 
