@@ -16,6 +16,9 @@ nkWindow::~nkWindow()
 }
 
 
+NS_IMPL_ISUPPORTS1(nkWindow, nkIWindow)
+
+
 NS_IMETHODIMP
 nkWindow::GetTitle(PRUnichar** title)
 {
@@ -69,8 +72,13 @@ LRESULT CALLBACK
 nkWindow::WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
   switch (message) {
+    case WM_CLOSE: {
+      ::PostQuitMessage(0);
+      return 0;
+    }
+
     default: {
-      return DefWindowProc(window, message, wparam, lparam);
+      return ::DefWindowProc(window, message, wparam, lparam);
     }
   }
 }

@@ -11,6 +11,12 @@ nkWindowingService::nkWindowingService()
 NS_IMPL_ISUPPORTS1(nkWindowingService, nkIWindowingService);
 
 
+// I hate Win32 and macros
+#ifdef CreateWindow
+#undef CreateWindow
+#endif
+
+
 NS_IMETHODIMP
 nkWindowingService::CreateWindow(nkIWindow** rv)
 {
@@ -25,10 +31,10 @@ nkWindowingService::CreateWindow(nkIWindow** rv)
   wc.hInstance     = instance;
   wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
   wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-  wc.lspzClassName = "NaikaiWindow";
+  wc.lpszClassName = "NaikaiWindow";
   RegisterClass(&wc);
 
-  HWND window = CreateWindow(
+  HWND window = ::CreateWindowA(
     "NaikaiWindow",
     "Naikai Window",
     WS_OVERLAPPEDWINDOW,
@@ -41,8 +47,8 @@ nkWindowingService::CreateWindow(nkIWindow** rv)
     return NS_ERROR_FAILURE;
   }
 
-  ShowWindow(window, SW_SHOW);
-  UpdateWindow(window);
+  ::ShowWindow(window, SW_SHOW);
+  ::UpdateWindow(window);
 
   *rv = new nkWindow(window);
   NS_ADDREF(*rv);
@@ -58,7 +64,7 @@ nkWindowingService::CreateMenu(nkIMenu** rv)
 
 
 NS_IMETHODIMP
-nkWindowingService::CreateMenuItem(nkICommand** rv)
+nkWindowingService::CreateMenuItem(nkICommand* command, nkIMenuItem** rv)
 {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
@@ -81,7 +87,12 @@ nkWindowingService::SetOnIdle(nkICommand* on_idle)
 NS_IMETHODIMP
 nkWindowingService::Run()
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  MSG msg;
+  while (GetMessage(&msg, NULL, 0, 0) > 0) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
+  return NS_OK;
 }
 
 
