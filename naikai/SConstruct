@@ -11,17 +11,22 @@ import copy
 ### LOAD BUILD CONFIGURATION ###
 
 try:
-    BUILD_RC = os.environ['NAIKAI_BUILD_CFG']
+    NK_MOZ_DIST = os.environ['NK_MOZ_DIST']
+    NK_MOZ_DIST_BIN = os.environ['NK_MOZ_DIST_BIN']
 except:
-    BUILD_RC = path.join(os.environ['HOME'], 'naikai_build')
+    try:
+        BUILD_RC = os.environ['NAIKAI_BUILD_CFG']
+    except:
+        BUILD_RC = path.join(os.environ['HOME'], 'naikai_build')
 
-try:
-    execfile(BUILD_RC)
-except:
-    print "Can't open build configuration file!"
-    print "Set NAIKAI_BUILD_CFG or put a configuration file in"
-    print "$HOME/naikai_build."
-    sys.exit()
+    try:
+        execfile(BUILD_RC)
+    except:
+        print "Can't open build configuration file!"
+        print "Set NAIKAI_BUILD_CFG or put a configuration file in"
+        print "$HOME/naikai_build."
+        sys.exit()
+
 
 # make sure we have all of the necessary variables
 try:
