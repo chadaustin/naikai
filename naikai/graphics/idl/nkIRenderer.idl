@@ -1,0 +1,17 @@
+#include "nsISupports.idl"
+
+
+interface nkIWindow;
+
+
+// @naikai.aegisknight.org/renderer;1
+
+
+[scriptable, uuid(c09b32ec-1dd1-11b2-90c7-888a52e11abc)]
+interface nkIRenderer : nsISupports
+{
+  void attach(in nkIWindow window);
+  void detach();
+
+  void draw();
+};
