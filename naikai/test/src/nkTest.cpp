@@ -4,6 +4,7 @@
 #include "nsIGenericFactory.h"
 #include "nsIServiceManagerUtils.h"
 #include "nsLiteralString.h"
+#include "nsString2.h"
 #include "nkIRenderer.h"
 #include "nkIRunnable.h"
 #include "nkIWindow.h"

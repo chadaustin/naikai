@@ -67,6 +67,9 @@ Builders = [
     Builder(
         name = 'InterfaceHeader',
         action = XPIDL_COMMAND + ' -m header -e $TARGET $SOURCES'),
+]
+
+VC6Builders = [
     Builder(
         name = 'Object',
         action = 'CL /nologo /c /DXP_WIN /DXP_WIN32 /MT /GX /O2 ' +
@@ -81,6 +84,34 @@ Builders = [
                  '/out:$TARGET $SOURCES $LIBRARIES'),
 ]
 
+GCCBuilders = [
+    Builder(
+        name = 'Object',
+        action = 'g++ -c -DXP_UNIX -o $TARGET $SOURCES ' +
+                 MOZ_INCLUDE + ' $INCLUDE'),
+    Builder(
+	name = 'Program',
+        action = 'g++ -o $TARGET $SOURCES'),
+    Builder(
+	name = 'Component',
+	action = 'g++ -shared -o $TARGET $SOURCES -L $LIBPATH $LIBRARIES'),
+]
+
+
+# 'autoconfiguration' step...  this is pretty hacky
+if sys.platform == 'win32' or sys.platform == 'cygwin':
+    Builders += VC6Builders
+    OBJ_EXT = '.obj'
+    LIB_EXT = '.dll'
+    EXE_EXT = '.exe'
+    STANDARD_LIBRARIES = 'xpcom.lib user32.lib'
+else:
+    Builders += GCCBuilders
+    OBJ_EXT = '.o'
+    LIB_EXT = '.so'
+    EXE_EXT = ''
+    STANDARD_LIBRARIES = '-lxpcom'
+=
 
 ### CUSTOM SCANNERS ###
 ### shamelessly ripped from SCons/Scanner/C.py (but modified!) ###
@@ -240,7 +271,7 @@ for m in MODULES:
 	INTERFACE_HEADERS = INTERFACE_HEADERS,
 	INCLUDE = include,
 	IDL_INCLUDE = idl_include,
-	LIBRARIES = 'xpcom.lib user32.lib')
+	LIBRARIES = STANDARD_LIBRARIES)
 
 
     # explicit custom dependency scanner...
@@ -274,13 +305,13 @@ for m in MODULES:
 
     # build module programs
     for i in PROGRAMS:
-	target = i['target'] + '.exe'
+	target = i['target'] + EXE_EXT
 
 	objects = []
 	for s in i['sources']:
 	    source = path.join(m, 'src', s + '.cpp')
 
-	    o = path.join(BUILD, 'obj', s + '.obj')
+	    o = path.join(BUILD, 'obj', s + OBJ_EXT)
 	    e.Object(target = o, source = source)
 	    objects.append(o)
 
@@ -289,7 +320,7 @@ for m in MODULES:
 
     # build module components
     for i in COMPONENTS:
-	target = i['target'] + '.dll'
+	target = i['target'] + LIB_EXT
 
 	srcdir = 'src'
 	if i.has_key('srcdir'):
@@ -299,7 +330,7 @@ for m in MODULES:
 	for s in i['sources']:
 	    source = path.join(m, srcdir, s + '.cpp')
 
-	    o = path.join(BUILD, 'obj', s + '.obj')
+	    o = path.join(BUILD, 'obj', s + OBJ_EXT)
 	    e.Object(target = o, source = source)
 	    objects.append(o)
 
