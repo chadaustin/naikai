@@ -1,4 +1,5 @@
 #include "nsISupports.idl"
+#include "nkIMenu.idl"
 
 
 [scriptable, uuid(59b30072-1dd2-11b2-8258-8076ef1738cf)]
@@ -6,5 +7,6 @@ interface nkIWindow : nsISupports
 {
   attribute wstring title;
   attribute boolean fullscreen;
-  
+
+  attribute nkIMenu menuBar;
 };
