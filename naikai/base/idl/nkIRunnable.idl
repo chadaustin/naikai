@@ -1,0 +1,7 @@
+#include "nsISupports.idl"
+
+[scriptable, uuid(4647d752-1dd2-11b2-991a-e5a2a9dbaa7a)]
+interface nkIRunnable : nsISupports
+{
+    void run();
+};

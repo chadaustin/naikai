@@ -1,0 +1,37 @@
+<html>
+
+<head>
+<title>Naikai | Components | Input</title>
+</head>
+
+<body>
+
+<h1>Naikai | Components | Input</h1>
+
+<p>
+Naikai's input system will be completely abstract and generic.  The InputSystem
+object will provide a set of InputDevice objects.  Each InputDevice will provide a
+set of axes and buttons.  For example, a keyboard will have ~100 buttons.  A
+standard mouse would provide two buttons and two axes.  Maybe a third axes if the
+mouse has a wheel.
+</p>
+
+<p>
+Naikai will support both the polling and event queue input models.  In the polling
+model, the game asks the input device for its current state (whether buttons are
+pressed and the current position of an axis) once each frame.   In the event queue
+model, the input device pushes events in a queue, and the game processes them (for
+example: "U key was pressed, U key was unpressed") periodically.
+</p>
+
+<hr>
+
+<pre>
+Author:        Chad Austin
+Created:       2001.06.06
+Last Updated:  2001.06.06
+</pre>
+
+</body>
+
+</html>
