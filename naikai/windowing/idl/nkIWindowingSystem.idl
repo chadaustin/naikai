@@ -13,9 +13,8 @@
 interface nkIWindowingSystem : nsISupports
 {
   nkIWindow        createWindow();
-  nkIMenu          createMenu(in wstring name);
-  nkIMenuSeparator createMenuSeparator();
-  nkIMenuItem      createMenuItem(in wstring name, in nkICommand command);
+  nkIMenu          createMenu();
+  nkIMenuItem      createMenuItem(in nkICommand command);
 
   attribute nkICommand onIdle;
 

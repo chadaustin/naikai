@@ -6,12 +6,9 @@
 [scriptable, uuid(3ab273be-1dd2-11b2-9485-ac5d260e5968)]
 interface nkIMenu : nsISupports
 {
-  // figure these out later
-  //readonly attribute int itemCount;
-  //nsISupports getItem(int index);  
+  void appendSubMenu(in wstring name, in nkIMenu menu);
+  void appendSeparator();
+  void appendItem(in wstring name, in nkIMenuItem item);
 
-  void insertSubMenu  (in short index, in nkIMenu menu);
-  void insertSeparator(in short index, in nkIMenuSeparator separator);
-  void insertItem     (in short index, in nkIMenuItem item);
-  void deleteItem(in short index);
+  void pack();
 };
