@@ -1,0 +1,11 @@
+#include "nsISupports.idl"
+#include "nkIWindow.idl"
+
+
+[scriptable, uuid(be999e44-1dd1-11b2-b1fc-94ad5884f63c)]
+interface nkIWindowingSystem : nsISupports
+{
+  nkIWindow createFrameWindow();
+
+  nkIWindow processEvents();
+};
