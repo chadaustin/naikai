@@ -12,12 +12,6 @@ static nsModuleComponentInfo components[] =
   NK_WINDOWING_SERVICE_CID,
   NK_WINDOWING_SERVICE_CONTRACTID,
   nkWindowingServiceConstructor,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
 
 } };
 

@@ -1,5 +1,6 @@
 REQUIRES = [
     'base',
+    'graphics',
     'windowing',
 ]
 

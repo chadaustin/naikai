@@ -37,7 +37,7 @@ except:
 
 # build/dist directory
 BUILD = 'build'
-MODULES = [ 'base', 'nrun', 'test', 'windowing' ]
+MODULES = [ 'base', 'graphics', 'nrun', 'test', 'windowing' ]
 
 
 XPIDL_COMMAND = 'xpidl -I ' + path.join(NK_MOZ_DIST, 'idl') + ' $IDL_INCLUDE'
@@ -53,6 +53,9 @@ MOZ_INCLUDE = reduce(
 ### BUILDERS ###
 
 Builders = [
+    Builder(
+	name = 'CopyFile',
+	action = 'cp $SOURCES $TARGET'),
     Builder(
         name = 'TypeLibrary',
         action = XPIDL_COMMAND + ' -m typelib -e $TARGET $SOURCES'),
@@ -179,41 +182,46 @@ GEN_INTERFACES = {}
 
 # load each module, building a module info database
 for m in MODULES:
+    # defaults
+    REQUIRES       = []
+    IDL_FILES      = []
+    PUBLIC_HEADERS = []
+    PROGRAMS       = []
+    COMPONENTS     = []
+
     try:
-	# defaults
-	REQUIRES   = []
-	IDL_FILES  = []
-	PROGRAMS   = []
-	COMPONENTS = []
-
 	execfile(path.join(m, 'module.py'), locals())
-
-	MODULE_INFO[m] = {
-	    'requires':   REQUIRES + [m],  # all modules require themselves
-            'idl_files':  IDL_FILES,
-            'programs':   PROGRAMS,
-            'components': COMPONENTS
-	}
-
-	for i in IDL_FILES:
-	    idl = i + '.idl'
-            h   = i + '.h'
-	    INTERFACES[idl] = path.join(m, 'idl', idl)
-	    INTERFACE_HEADERS[h] = path.join(BUILD, 'include', m, h)
-	    GEN_INTERFACES[idl] = path.join(BUILD, 'include', m, h)
-
     except:
 	print "Skipping module: " + m
+
+    MODULE_INFO[m] = {
+	'requires':       REQUIRES + [m],  # all modules require themselves
+        'idl_files':      IDL_FILES,
+	'public_headers': PUBLIC_HEADERS,
+        'programs':       PROGRAMS,
+        'components':     COMPONENTS
+    }
+
+    for i in IDL_FILES:
+	idl = i + '.idl'
+        h   = i + '.h'
+	INTERFACES[idl] = path.join(m, 'idl', idl)
+	INTERFACE_HEADERS[h] = path.join(BUILD, 'include', m, h)
+	GEN_INTERFACES[idl] = path.join(BUILD, 'include', m, h)
+
+    for i in PUBLIC_HEADERS:
+	INTERFACE_HEADERS[i] = path.join(BUILD, 'include', m, i)
 
 
 ### BUILD DEPENDENCY TREE ###
 
 for m in MODULES:
     mi = MODULE_INFO[m]
-    REQUIRES   = mi['requires']
-    IDL_FILES  = mi['idl_files']
-    PROGRAMS   = mi['programs']
-    COMPONENTS = mi['components']
+    REQUIRES       = mi['requires']
+    PUBLIC_HEADERS = mi['public_headers']
+    IDL_FILES      = mi['idl_files']
+    PROGRAMS       = mi['programs']
+    COMPONENTS     = mi['components']
 
     idl_include = ''
     include = ''
@@ -222,7 +230,7 @@ for m in MODULES:
 	include += '-I ' + path.join(BUILD, 'include', r) + ' '
 
     # clone the environment for each module so we can make REQUIRES do its
-    #job
+    # job
     e = env.Copy(
 	INTERFACE_HEADERS = INTERFACE_HEADERS,
 	INCLUDE = include,
@@ -252,6 +260,12 @@ for m in MODULES:
 	e.InterfaceHeader(
 	    target = path.join(BUILD, 'include', m, i + '.h'),
 	    source = idl_file)
+
+    # copy public headers
+    for i in PUBLIC_HEADERS:
+	e.CopyFile(
+	    target = path.join(BUILD, 'include', m, i),
+	    source = path.join(m, 'public', i))
 
     # build module programs
     for i in PROGRAMS:

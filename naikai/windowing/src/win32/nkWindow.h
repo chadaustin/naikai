@@ -7,6 +7,7 @@
 #include "nsCOMPtr.h"
 #include "nkIWindow.h"
 #include "nkIPrivateMenu.h"
+#include "nkIWin32Window.h"
 
 
 class nkICommand;
@@ -15,7 +16,9 @@ class nkWindowingService;
 class nkMenu;
 
 
-class nkWindow : public nkIWindow
+class nkWindow
+: public nkIWindow
+, public nkIWin32Window
 {
 private:
   nkWindow(HWND window);
@@ -26,6 +29,8 @@ public:
   NS_DECL_NKIWINDOW
 
 private:
+  NS_IMETHOD GetHandle(HWND& window);
+
   void MapCommand(int command, nkICommand* the_command);
   void UnmapCommand(int command);
 

@@ -4,6 +4,7 @@
 #include "nsIGenericFactory.h"
 #include "nsIServiceManagerUtils.h"
 #include "nsLiteralString.h"
+#include "nkIRenderer.h"
 #include "nkIRunnable.h"
 #include "nkIWindow.h"
 #include "nkIWindowingService.h"
@@ -65,12 +66,14 @@ Runnable::Run()
     return NS_ERROR_FAILURE;
   }
 
+  // create window
   nsCOMPtr<nkIWindow> window;
   rv = ws->CreateWindow(getter_AddRefs(window));
   if (!window || NS_FAILED(rv)) {
     return NS_ERROR_FAILURE;
   }
 
+  // create menu
   nsCOMPtr<nkIMenu> menu;
   rv = ws->CreateMenu(getter_AddRefs(menu));
   if (!menu || NS_FAILED(rv)) {
@@ -95,6 +98,19 @@ Runnable::Run()
   if (NS_FAILED(rv)) {
     return NS_ERROR_FAILURE;
   }
+
+  // create renderer
+  nsCOMPtr<nkIRenderer> renderer(
+    do_CreateInstance("@naikai.aegisknight.org/renderer;1", &rv));
+  if (!renderer) {
+    return NS_ERROR_FAILURE;
+  }
+
+  rv = renderer->Attach(window);
+  if (NS_FAILED(rv)) {
+    return NS_ERROR_FAILURE;
+  }
+
   return ws->Run();
 }
 

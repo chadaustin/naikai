@@ -17,7 +17,7 @@ nkWindow::~nkWindow()
 }
 
 
-NS_IMPL_ISUPPORTS1(nkWindow, nkIWindow)
+NS_IMPL_ISUPPORTS2(nkWindow, nkIWindow, nkIWin32Window)
 
 
 NS_IMETHODIMP
@@ -106,6 +106,14 @@ nkWindow::SetMenu(nkIMenu* menu_)
 }
 
 
+NS_IMETHODIMP
+nkWindow::GetHandle(HWND& window)
+{
+  window = m_window;
+  return NS_OK;
+}
+
+
 void
 nkWindow::MapCommand(int command, nkICommand* the_command)
 {
@@ -150,7 +158,7 @@ nkWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam)
       if (c) {
 
 	// ignore result
-	c->Execute(this);
+	c->Execute(static_cast<nkIWindow*>(this));
 
       }
     }
