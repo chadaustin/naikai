@@ -1,11 +1,7 @@
-process_idl([
-    "nkIMenu.idl",
-    "nkIWindow.idl",
-    "nkIWindowingSystem.idl",
-])
-
-process_src([
-    "win32/nkWindow.cpp",
-    "win32/nkWindowingModule.cpp",
-    "win32/nkWindowingSystem.cpp",
-])
+IDL_FILES = [
+    "nkIMenu",
+    "nkIMenuItem",
+    "nkIMenuSeparator",
+    "nkIWindow",
+    "nkIWindowingSystem",
+]

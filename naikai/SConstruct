@@ -1,21 +1,39 @@
 from SCons.Builder import Builder
 from os import path
+import os
+import sys
 
 BUILD = 'build'
-MOZ_BIN = '/cygdrive/d/mozilla/mozilla/dist/WIN32_O.OBJ/bin'
-MOZ_IDL = 'D:/mozilla/mozilla/dist/idl'
-
-os.putenv('PATH', MOZ_BIN + ':' + os.getenv('PATH'))
+if os.environ.has_key('MOZ_IDL'):
+    MOZ_IDL = os.environ['MOZ_IDL']
+else:
+    if os.environ.has_key('HOME'):
+        MOZ_IDL = os.environ['HOME'] + '/mozilla/idl'
+    else:
+        MOZ_IDL = '/mozilla/idl'
 
 # set default target
 Default(BUILD)
 
+MODULES = [ 'base', 'windowing' ]
+MODULE_INC = ''
+for m in MODULES:
+    MODULE_INC += ' -I ' + path.join(m, 'idl') + ' '
+
 # generate builders
 TypeLibrary = Builder(name = 'TypeLibrary',
-		      action = 'xpidl -I ' + MOZ_IDL + ' -m typelib -o %(target)s %(source)s')
+		      action = 'xpidl -I ' + MOZ_IDL + MODULE_INC + ' -m typelib -e $target $sources')
 Builders = [TypeLibrary]
 
 # create an environment
-env = Environment(BUILDERS = Builders)
-env.TypeLibrary(target = path.join(BUILD, "components", "nkIRunnable.xpt"),
-		source = path.join("base", "idl", "nkIRunnable.idl"))
+env = Environment(ENV = { 'PATH': os.environ['PATH'] }, BUILDERS = Builders)
+
+for m in MODULES:
+    try:
+        file = open(m + '/module.py', 'r')
+	exec file in locals()
+        for i in IDL_FILES:
+            env.TypeLibrary(target = path.join(BUILD, 'components', i + '.xpt'),
+                            source = path.join(m, 'idl', i + '.idl'))
+    except IOError:
+        sys.stderr.write("Skipping module: %s\n" % m)

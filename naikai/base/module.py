@@ -1,3 +1,4 @@
-process_idl([
-    "nkIRunnable.idl",
-])
+IDL_FILES = [
+    "nkICommand",
+    "nkIRunnable",
+]

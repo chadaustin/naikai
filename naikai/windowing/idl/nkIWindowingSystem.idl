@@ -12,9 +12,9 @@
 [scriptable, uuid(be999e44-1dd1-11b2-b1fc-94ad5884f63c)]
 interface nkIWindowingSystem : nsISupports
 {
-  nkIFrameWindow   createFrameWindow();
+  nkIWindow        createWindow();
   nkIMenu          createMenu(in wstring name);
-  nkIMenuSeperator createMenuSeparator();
+  nkIMenuSeparator createMenuSeparator();
   nkIMenuItem      createMenuItem(in wstring name, in nkICommand command);
 
   attribute nkICommand onIdle;
