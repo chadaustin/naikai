@@ -1,4 +1,5 @@
 #include "nkWindowingService.h"
+#include "nkMenu.h"
 #include "nkWindow.h"
 
 
@@ -59,7 +60,14 @@ nkWindowingService::CreateWindow(nkIWindow** rv)
 NS_IMETHODIMP
 nkWindowingService::CreateMenu(nkIMenu** rv)
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  HMENU menu = ::CreateMenu();
+  if (!menu) {
+    return NS_ERROR_FAILURE;
+  }
+
+  *rv = new nkMenu(menu);
+  NS_ADDREF(*rv);
+  return NS_OK;
 }
 
 

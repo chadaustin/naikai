@@ -64,7 +64,35 @@ nkWindow::SetVisible(PRBool visible)
 NS_IMETHODIMP
 nkWindow::SetMenu(nkIMenu* menu)
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  if (!menu) {    // clear menu
+
+    if (FALSE == ::SetMenu(m_window, 0)) {
+      return NS_ERROR_FAILURE;
+    }
+
+    m_menu = 0;
+    return NS_OK;
+
+  } else {        // set menu
+
+    nsresult rv = menu->Pack();
+    if (NS_FAILED(rv)) {
+      return rv;
+    }
+    
+    HMENU hmenu;
+    rv = menu->GetNative((void**)&hmenu);
+    if (NS_FAILED(rv)) {
+      return rv;
+    }
+
+    if (FALSE == ::SetMenu(m_window, hmenu)) {
+      return NS_ERROR_FAILURE;
+    }
+
+    m_menu = menu;
+    return NS_OK;
+  }
 }
 
 

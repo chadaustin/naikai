@@ -3,7 +3,9 @@
 
 
 #include <windows.h>
+#include "nsCOMPtr.h"
 #include "nkIWindow.h"
+#include "nkIMenu.h"
 
 
 class nkWindowingService;
@@ -11,10 +13,11 @@ class nkWindowingService;
 
 class nkWindow : public nkIWindow
 {
-public:
+private:
   nkWindow(HWND window);
   ~nkWindow();
 
+public:
   NS_DECL_ISUPPORTS
   NS_DECL_NKIWINDOW
 
@@ -23,6 +26,8 @@ private:
 
 private:
   HWND m_window;
+
+  nsCOMPtr<nkIMenu> m_menu;
 
   friend nkWindowingService;
 };

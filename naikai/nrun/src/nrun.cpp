@@ -48,7 +48,7 @@ void run(const char* contract_id)
 
   rv = runnable->Run();
   if (NS_FAILED(rv)) {
-    printf("Runnable failed: [%x]\n", rv);
+    printf("Run failed: [%x]\n", rv);
     return;
   }
 }

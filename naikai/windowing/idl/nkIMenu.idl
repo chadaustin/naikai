@@ -2,6 +2,9 @@
 #include "nkIMenuItem.idl"
 
 
+[ptr] native voidstar(void);
+
+
 [scriptable, uuid(3ab273be-1dd2-11b2-9485-ac5d260e5968)]
 interface nkIMenu : nsISupports
 {
@@ -10,4 +13,6 @@ interface nkIMenu : nsISupports
   void appendItem(in wstring name, in nkIMenuItem item);
 
   void pack();
+
+  [noscript] voidstar getNative();
 };

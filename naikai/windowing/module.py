@@ -5,7 +5,9 @@ REQUIRES = [
 COMPONENTS = [
 {
     'target': 'nkWindowing',
-    'sources': [ 'nkWindow', 'nkWindowingModule', 'nkWindowingService' ],
+    'sources': [
+	'nkMenu', 'nkWindow', 'nkWindowingModule', 'nkWindowingService'
+    ],
     'srcdir': 'win32'
 }
 ]
