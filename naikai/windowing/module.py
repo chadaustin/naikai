@@ -8,7 +8,7 @@ COMPONENTS = [
     'sources': [
 	'nkMenu', 'nkWindow', 'nkWindowingModule', 'nkWindowingService'
     ],
-    'srcdir': 'win32'
+    'srcdir': 'src/win32'
 }
 ]
 
