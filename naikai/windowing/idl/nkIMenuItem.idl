@@ -1,0 +1,7 @@
+#include "nsISupports.idl"
+
+
+[scriptable, uuid(9d717406-1dd1-11b2-a8c1-ce74174a7fb3)]
+interface nkIMenuItem : nsISupports
+{
+};

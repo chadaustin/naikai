@@ -1,0 +1,8 @@
+#include "nsISupports.idl"
+
+
+[scriptable, uuid(c364d8ba-1dd1-11b2-aa58-a3b9461fa3cc)]
+interface nkICommand : nsISupports
+{
+  void execute(in nsISupports caller);
+};

@@ -1,0 +1,7 @@
+#include "nkISupports.idl"
+
+
+[scriptable, uuid(97ac5df0-1dd1-11b2-ad3b-a43f99610c23)]
+interface nkIMenuSeparator : nsISupports
+{
+};

@@ -1,4 +1,8 @@
 #include "nsISupports.idl"
+
+#include "nkICommand.idl"
+#include "nkIMenu.idl"
+#include "nkIMenuSeparator.idl"
 #include "nkIWindow.idl"
 
 
@@ -8,7 +12,13 @@
 [scriptable, uuid(be999e44-1dd1-11b2-b1fc-94ad5884f63c)]
 interface nkIWindowingSystem : nsISupports
 {
-  nkIWindow createFrameWindow();
+  nkIFrameWindow   createFrameWindow();
+  nkIMenu          createMenu(in wstring name);
+  nkIMenuSeperator createMenuSeparator();
+  nkIMenuItem      createMenuItem(in wstring name, in nkICommand command);
 
-  void processEvents();
+  attribute nkICommand onIdle;
+
+  void run();
+  void pumpEvents();
 };
