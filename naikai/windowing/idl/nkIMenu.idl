@@ -2,23 +2,12 @@
 #include "nkICommand.idl"
 
 
-[ptr] native voidstar(void);
-
-
 [scriptable, uuid(3ab273be-1dd2-11b2-9485-ac5d260e5968)]
 interface nkIMenu : nsISupports
 {
-  readonly attribute long subMenuCount;
-  nkIMenu getSubMenu(in long index);
-
-  readonly attribute long itemCount;
-  nkICommand getItem(in long index);
-
   void appendSubMenu(in wstring name, in nkIMenu menu);
   void appendSeparator();
   void appendItem(in wstring name, in nkICommand command);
 
   void pack();
-
-  [noscript] voidstar getNative();
 };

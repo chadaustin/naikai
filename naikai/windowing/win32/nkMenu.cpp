@@ -1,4 +1,30 @@
 #include "nkMenu.h"
+#include "nkWindow.h"
+
+
+class CommandDatabase {
+public:
+  CommandDatabase() {
+    InitializeCriticalSection(&m_cs);
+    m_command = 100;  // good starting value?
+  }
+
+  ~CommandDatabase() {
+    DeleteCriticalSection(&m_cs);
+  }
+
+  int GetNextCommand() {
+    EnterCriticalSection(&m_cs);
+    int result = (m_command++) % 65536;
+    LeaveCriticalSection(&m_cs);
+    return result;
+  }
+
+private:
+  CRITICAL_SECTION m_cs;
+  int m_command;
+
+} g_CommandDatabase;
 
 
 nkMenu::nkMenu(HMENU menu)
@@ -20,7 +46,7 @@ nkMenu::~nkMenu()
 
   // clear menu item array
   for (i = 0; i < m_menu_items.size(); ++i) {
-    NS_IF_RELEASE(m_menu_items[i]);
+    NS_IF_RELEASE(m_menu_items[i].second);
   }
   m_menu_items.clear();
 
@@ -32,47 +58,18 @@ nkMenu::~nkMenu()
 }
 
 
-NS_IMPL_ISUPPORTS1(nkMenu, nkIMenu)
+NS_IMPL_ISUPPORTS2(nkMenu, nkIMenu, nkIPrivateMenu)
 
 
 NS_IMETHODIMP
-nkMenu::GetSubMenuCount(PRInt32* sub_menu_count)
-{
-  *sub_menu_count = m_sub_menus.size();
-  return NS_OK;
-}
-
-
-NS_IMETHODIMP
-nkMenu::GetSubMenu(PRInt32 index, nkIMenu** rv)
-{
-  *rv = m_sub_menus[index];
-  NS_ADDREF(*rv);
-  return NS_OK;
-}
-
-
-NS_IMETHODIMP
-nkMenu::GetItemCount(PRInt32* item_count)
-{
-  *item_count = m_menu_items.size();
-  return NS_OK;
-}
-
-
-NS_IMETHODIMP
-nkMenu::GetItem(PRInt32 index, nkICommand** rv)
-{
-  *rv = m_menu_items[index];
-  NS_ADDREF(*rv);
-  return NS_OK;
-}
-
-
-NS_IMETHODIMP
-nkMenu::AppendSubMenu(const PRUnichar* name, nkIMenu* menu)
+nkMenu::AppendSubMenu(const PRUnichar* name, nkIMenu* menu_)
 {
   if (m_packed) {
+    return NS_ERROR_ILLEGAL_VALUE;
+  }
+
+  nsCOMPtr<nkIPrivateMenu> menu(do_QueryInterface(menu_));
+  if (!menu) {
     return NS_ERROR_ILLEGAL_VALUE;
   }
 
@@ -82,7 +79,7 @@ nkMenu::AppendSubMenu(const PRUnichar* name, nkIMenu* menu)
   }
 
   HMENU hmenu;
-  rv = menu->GetNative((void**)&hmenu);
+  rv = menu->GetMenuHandle(hmenu);
   if (NS_FAILED(rv)) {
     return rv;
   }
@@ -93,7 +90,7 @@ nkMenu::AppendSubMenu(const PRUnichar* name, nkIMenu* menu)
     return NS_ERROR_FAILURE;
   }
 
-  NS_IF_ADDREF(menu);
+  NS_IF_ADDREF(menu_);
   m_sub_menus.push_back(menu);
 
   return NS_OK;
@@ -124,12 +121,13 @@ nkMenu::AppendItem(const PRUnichar* name, nkICommand* command)
   }
 
   // append menu item
-  if (FALSE == ::AppendMenuW(m_menu, MF_STRING | MF_ENABLED, 0, name)) {
+  int c = g_CommandDatabase.GetNextCommand();
+  if (FALSE == ::AppendMenuW(m_menu, MF_STRING | MF_ENABLED, c, name)) {
     return NS_ERROR_FAILURE;
   }
 
   NS_IF_ADDREF(command);
-  m_menu_items.push_back(command);
+  m_menu_items.push_back(std::pair<int, nkICommand*>(c, command));
 
   return NS_OK;
 }
@@ -146,8 +144,46 @@ nkMenu::Pack()
 
 
 NS_IMETHODIMP
-nkMenu::GetNative(void** rv)
+nkMenu::GetMenuHandle(HMENU& menu)
 {
-  *((HMENU*)rv) = m_menu;
+  menu = m_menu;
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
+nkMenu::Attach(nkWindow* window)
+{
+  int i;
+
+  // map all menu items
+  for (i = 0; i < m_menu_items.size(); ++i) {
+    window->MapCommand(m_menu_items[i].first, m_menu_items[i].second);
+  }
+
+  // attach all submenus
+  for (i = 0; i < m_sub_menus.size(); ++i) {
+    m_sub_menus[i]->Attach(window);
+  }
+
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
+nkMenu::Detach(nkWindow* window)
+{
+  int i;
+
+  // detach all submenus
+  for (i = 0; i < m_sub_menus.size(); ++i) {
+    m_sub_menus[i]->Detach(window);
+  }
+
+  // unmap all menu items
+  for (i = 0; i < m_menu_items.size(); ++i) {
+    window->UnmapCommand(m_menu_items[i].first);
+  }
+
   return NS_OK;
 }

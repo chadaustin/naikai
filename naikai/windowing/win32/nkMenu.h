@@ -2,15 +2,19 @@
 #define NK_MENU_H
 
 
+#include <utility>
 #include <vector>
 #include <windows.h>
-#include "nkIMenu.h"
+#include "nkIPrivateMenu.h"
 
+
+class nkICommand;
 
 class nkWindowingService;
+class nkWindow;
 
 
-class nkMenu : public nkIMenu
+class nkMenu : public nkIPrivateMenu
 {
 private:
   nkMenu(HMENU menu);
@@ -20,14 +24,19 @@ public:
   NS_DECL_ISUPPORTS
   NS_DECL_NKIMENU
 
+  NS_IMETHOD GetMenuHandle(HMENU& menu);
+  NS_IMETHOD Attach(nkWindow* window);
+  NS_IMETHOD Detach(nkWindow* window);
+
 private:
   bool m_packed;
   HMENU m_menu;
 
-  std::vector<nkIMenu*>    m_sub_menus;
-  std::vector<nkICommand*> m_menu_items;
+  std::vector<nkIPrivateMenu*>              m_sub_menus;
+  std::vector<std::pair<int, nkICommand*> > m_menu_items;
 
   friend nkWindowingService;
+  friend nkWindow;
 };
 
 
