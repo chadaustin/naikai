@@ -63,6 +63,23 @@ nkWindow::SetVisible(PRBool visible)
 
 
 NS_IMETHODIMP
+nkWindow::SetOnResize(nkICommand* on_resize)
+{
+  m_on_resize = on_resize;
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
+nkWindow::GetOnResize(nkICommand** on_resize)
+{
+  *on_resize = m_on_resize;
+  NS_ADDREF(*on_resize);
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
 nkWindow::SetMenu(nkIMenu* menu_)
 {
   if (!menu_) {    // clear menu
@@ -148,6 +165,13 @@ nkWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam)
   switch (message) {
   case WM_CLOSE: {
     ::PostQuitMessage(0);
+    return 0;
+  }
+
+  case WM_SIZE: {
+    if (m_on_resize) {
+      m_on_resize->Execute(static_cast<nkIWindow*>(this));
+    }
     return 0;
   }
 

@@ -42,6 +42,8 @@ private:
   nsCOMPtr<nkIPrivateMenu> m_menu;
   std::map<int, nkICommand*> m_commands;
 
+  nsCOMPtr<nkICommand> m_on_resize;
+
   friend nkWindowingService;
   friend nkMenu;
 };

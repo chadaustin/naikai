@@ -12,14 +12,8 @@ nkWindowingService::nkWindowingService()
 NS_IMPL_ISUPPORTS1(nkWindowingService, nkIWindowingService);
 
 
-// I hate Win32 and macros
-#ifdef CreateWindow
-#undef CreateWindow
-#endif
-
-
 NS_IMETHODIMP
-nkWindowingService::CreateWindow(nkIWindow** rv)
+nkWindowingService::CreateFrameWindow(nkIWindow** rv)
 {
   HINSTANCE instance = GetModuleHandle(NULL);
 
@@ -28,6 +22,7 @@ nkWindowingService::CreateWindow(nkIWindow** rv)
   // if it does fail, window creation will
   WNDCLASS wc;
   memset(&wc, 0, sizeof(wc));
+  wc.style         = CS_OWNDC;  // required for the OpenGL renderer
   wc.lpfnWndProc   = nkWindow::WindowProc;
   wc.hInstance     = instance;
   wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
@@ -91,9 +86,29 @@ NS_IMETHODIMP
 nkWindowingService::Run()
 {
   MSG msg;
-  while (GetMessage(&msg, NULL, 0, 0) > 0) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
+  while (true) {
+
+    bool available = true;
+    if (!m_on_idle) {
+      if (GetMessage(&msg, NULL, 0, 0) <= 0) {
+	return NS_OK;
+      }
+    } else {
+      available = (0 != PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+      if (available && msg.message == WM_QUIT) {
+	return NS_OK;
+      }
+    }
+
+    if (available) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+
+    if (m_on_idle) {
+      m_on_idle->Execute(this);
+    }
+
   }
   return NS_OK;
 }

@@ -11,7 +11,7 @@
 [scriptable, uuid(be999e44-1dd1-11b2-b1fc-94ad5884f63c)]
 interface nkIWindowingService : nsISupports
 {
-  nkIWindow        createWindow();
+  nkIWindow        createFrameWindow();
   nkIMenu          createMenu();
 
   attribute nkICommand onIdle;

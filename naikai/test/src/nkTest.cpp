@@ -69,7 +69,7 @@ Runnable::Run()
 
   // create window
   nsCOMPtr<nkIWindow> window;
-  rv = ws->CreateWindow(getter_AddRefs(window));
+  rv = ws->CreateFrameWindow(getter_AddRefs(window));
   if (!window || NS_FAILED(rv)) {
     return NS_ERROR_FAILURE;
   }

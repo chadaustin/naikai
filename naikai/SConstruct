@@ -45,14 +45,15 @@ BUILD = 'build'
 MODULES = [ 'base', 'graphics', 'nrun', 'test', 'windowing' ]
 
 
-XPIDL_COMMAND = 'xpidl -I ' + path.join(NK_MOZ_DIST, 'idl') + ' $IDL_INCLUDE'
+XPIDL_COMMAND = path.join(NK_MOZ_DIST_BIN, 'bin', 'xpidl') + \
+                ' -I ' + path.join(NK_MOZ_DIST, 'idl') + ' $IDL_INCLUDE'
 
 # set default target
 Default(BUILD)
 
 MOZ_INCLUDE = reduce(
-  lambda a, b: a + '-I ' + path.join(NK_MOZ_DIST, 'include', b) + ' ',
-  ['xpcom', 'nspr', 'string'], '')
+    lambda a, b: a + '-I ' + path.join(NK_MOZ_DIST, 'include', b) + ' ',
+    ['xpcom', 'nspr', 'string'], '')
 
 
 ### BUILDERS ###
@@ -104,13 +105,15 @@ if sys.platform == 'win32' or sys.platform == 'cygwin':
     OBJ_EXT = '.obj'
     LIB_EXT = '.dll'
     EXE_EXT = '.exe'
-    STANDARD_LIBRARIES = 'xpcom.lib user32.lib'
+    STANDARD_LIBRARIES = \
+        'xpcom.lib user32.lib gdi32.lib opengl32.lib glu32.lib'
 else:
     Builders += GCCBuilders
     OBJ_EXT = '.o'
     LIB_EXT = '.so'
     EXE_EXT = ''
     STANDARD_LIBRARIES = '-lxpcom'
+
 
 ### CUSTOM SCANNERS ###
 ### shamelessly ripped from SCons/Scanner/C.py (but modified!) ###
@@ -147,6 +150,7 @@ class CScanner(SCons.Scanner.Recursive):
     def __hash__(self):
         return hash(self.hash)
 
+
 def scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
 
     fs, cpppath = args
@@ -160,9 +164,10 @@ def scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
         quote_includes = quote_re.findall(contents)
 
 	iface_h = env.Dictionary()['INTERFACE_HEADERS']
+        extra = []
 	for i in angle_includes + quote_includes:
 	    if iface_h.has_key(i):
-		env.Depends(filename, iface_h[i])
+		extra.append(iface_h[i])
 
         dir = path.dirname(filename)
         if dir:
@@ -170,7 +175,8 @@ def scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
         else:
             source_dir = ( fs.Top, )
 
-        return (SCons.Util.find_files(angle_includes, cpppath + source_dir,
+        return (SCons.Util.scons_str2nodes(extra)
+                + SCons.Util.find_files(angle_includes, cpppath + source_dir,
                                       fs.File)
                 + SCons.Util.find_files(quote_includes, source_dir + cpppath,
                                         fs.File))

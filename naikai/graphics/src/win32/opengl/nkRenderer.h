@@ -2,6 +2,7 @@
 #define NK_RENDERER_H
 
 
+#include <windows.h>
 #include "nkIRenderer.h"
 
 
@@ -21,7 +22,15 @@ public:
   NS_DECL_ISUPPORTS
   NS_DECL_NKIRENDERER
 
+  nsresult Resize();
+
 private:
+  nsresult Setup();
+
+private:
+  HWND  m_window;
+  HDC   m_dc;
+  HGLRC m_rc;
 };
 
 

@@ -1,4 +1,5 @@
 REQUIRES = [
+    'base', # XXX should this be automatically inferred from 'windowing'?
     'windowing'
 ]
 
