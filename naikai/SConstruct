@@ -1,6 +1,8 @@
 from SCons.Builder import Builder
-from os import path
+import SCons.Scanner
+import SCons.Util
 import os
+from os import path
 import sys
 import re
 import copy
@@ -72,11 +74,71 @@ Builders = [
 ]
 
 
-### CUSTOM SCANNER ###
+### CUSTOM SCANNERS ###
+### shamelessly ripped from SCons/Scanner/C.py (but modified!) ###
 
 angle_re = re.compile('^[ \t]*#[ \t]*include[ \t]+<([\\w./\\\\]+)>', re.M)
 quote_re = re.compile('^[ \t]*#[ \t]*include[ \t]+"([\\w./\\\\]+)"', re.M)
 
+def CScan(fs = SCons.Node.FS.default_fs):
+    cs = CScanner(scan, "CScan", [fs, ()],
+                  [".c", ".C", ".cxx", ".cpp", ".c++",
+                   ".h", ".H", ".hxx", ".hpp"])
+    cs.fs = fs
+    return cs
+
+class CScanner(SCons.Scanner.Recursive):
+    def __init__(self, *args, **kw):
+        apply(SCons.Scanner.Recursive.__init__, (self,) + args, kw)
+        self.hash = None
+        self.pathscanners = {}
+
+    def instance(self, env):
+	try:
+            dirs = tuple(SCons.Util.scons_str2nodes(env.Dictionary('CPPPATH'),
+                                                    self.fs.Dir))
+        except:
+            dirs = ()
+        if not self.pathscanners.has_key(dirs):
+            clone = copy.copy(self)
+            clone.hash = dirs
+            clone.argument = [self.fs, dirs]	# XXX reaching into object
+            self.pathscanners[dirs] = clone
+        return self.pathscanners[dirs]
+
+    def __hash__(self):
+        return hash(self.hash)
+
+def scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
+
+    fs, cpppath = args
+
+    if fs.File(filename, fs.Top).exists():
+        file = open(filename)
+        contents = file.read()
+        file.close()
+
+        angle_includes = angle_re.findall(contents)
+        quote_includes = quote_re.findall(contents)
+
+	iface_h = env.Dictionary()['INTERFACE_HEADERS']
+	for i in angle_includes + quote_includes:
+	    if iface_h.has_key(i):
+		env.Depends(filename, iface_h[i])
+
+        dir = path.dirname(filename)
+        if dir:
+            source_dir = (fs.Dir(dir, fs.Top),)
+        else:
+            source_dir = ( fs.Top, )
+
+        return (SCons.Util.find_files(angle_includes, cpppath + source_dir,
+                                      fs.File)
+                + SCons.Util.find_files(quote_includes, source_dir + cpppath,
+                                        fs.File))
+    return []
+
+# same as |scan|, but returns a list of filenames
 def do_scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
 
     fs, cpppath = args
@@ -94,10 +156,12 @@ def do_scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
     return []
 
 
+
 # create an environment
 env = Environment(
     ENV = os.environ,
     BUILDERS = Builders,
+    SCANNERS = [CScan()],
     LIBPATH = path.join(NK_MOZ_DIST_BIN, 'lib'))
 
 
@@ -160,6 +224,7 @@ for m in MODULES:
     # clone the environment for each module so we can make REQUIRES do its
     #job
     e = env.Copy(
+	INTERFACE_HEADERS = INTERFACE_HEADERS,
 	INCLUDE = include,
 	IDL_INCLUDE = idl_include,
 	LIBRARIES = 'xpcom.lib user32.lib')
@@ -196,9 +261,6 @@ for m in MODULES:
 	for s in i['sources']:
 	    source = path.join(m, 'src', s + '.cpp')
 
-	    # explicitly scan source file for interface headers
-	    explicit_scan(source, e, [INTERFACE_HEADERS])
-
 	    o = path.join(BUILD, 'obj', s + '.obj')
 	    e.Object(target = o, source = source)
 	    objects.append(o)
@@ -217,9 +279,6 @@ for m in MODULES:
 	objects = []
 	for s in i['sources']:
 	    source = path.join(m, srcdir, s + '.cpp')
-
-	    # explicitly scan source file for interface headers
-	    explicit_scan(source, e, [INTERFACE_HEADERS])
 
 	    o = path.join(BUILD, 'obj', s + '.obj')
 	    e.Object(target = o, source = source)
