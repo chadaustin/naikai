@@ -111,7 +111,6 @@ else:
     LIB_EXT = '.so'
     EXE_EXT = ''
     STANDARD_LIBRARIES = '-lxpcom'
-=
 
 ### CUSTOM SCANNERS ###
 ### shamelessly ripped from SCons/Scanner/C.py (but modified!) ###
