@@ -1,0 +1,21 @@
+from SCons.Builder import Builder
+from os import path
+
+BUILD = 'build'
+MOZ_BIN = '/cygdrive/d/mozilla/mozilla/dist/WIN32_O.OBJ/bin'
+MOZ_IDL = 'D:/mozilla/mozilla/dist/idl'
+
+os.putenv('PATH', MOZ_BIN + ':' + os.getenv('PATH'))
+
+# set default target
+Default(BUILD)
+
+# generate builders
+TypeLibrary = Builder(name = 'TypeLibrary',
+		      action = 'xpidl -I ' + MOZ_IDL + ' -m typelib -o %(target)s %(source)s')
+Builders = [TypeLibrary]
+
+# create an environment
+env = Environment(BUILDERS = Builders)
+env.TypeLibrary(target = path.join(BUILD, "components", "nkIRunnable.xpt"),
+		source = path.join("base", "idl", "nkIRunnable.idl"))
