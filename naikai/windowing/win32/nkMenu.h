@@ -2,6 +2,7 @@
 #define NK_MENU_H
 
 
+#include <vector>
 #include <windows.h>
 #include "nkIMenu.h"
 
@@ -22,6 +23,9 @@ public:
 private:
   bool m_packed;
   HMENU m_menu;
+
+  std::vector<nkIMenu*>    m_sub_menus;
+  std::vector<nkICommand*> m_menu_items;
 
   friend nkWindowingService;
 };

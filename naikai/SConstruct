@@ -2,6 +2,8 @@ from SCons.Builder import Builder
 from os import path
 import os
 import sys
+import re
+import copy
 
 
 ### LOAD BUILD CONFIGURATION ###
@@ -57,8 +59,8 @@ Builders = [
         action = XPIDL_COMMAND + ' -m header -e $TARGET $SOURCES'),
     Builder(
         name = 'Object',
-        action = 'CL /nologo /c /DXP_WIN /DXP_WIN32 /MT /O2 ' + MOZ_INCLUDE +
-                 ' $INCLUDE /Fo$TARGET $SOURCES'),
+        action = 'CL /nologo /c /DXP_WIN /DXP_WIN32 /MT /GX /O2 ' +
+                 MOZ_INCLUDE + ' $INCLUDE /Fo$TARGET $SOURCES'),
     Builder(
 	name = 'Program',
         action = 'LINK /nologo /LIBPATH:$LIBPATH ' +
@@ -70,24 +72,48 @@ Builders = [
 ]
 
 
-### SCANNERS ###
+### CUSTOM SCANNER ###
 
-#class IDLScanner(SCons.Scanner.Recursive):
-#Scanners = [
-#    Scons.Scanner.C.CScan(),
-#    IDLScanner(SCons.Scanner.Recursive)
-#	),
-#]
+angle_re = re.compile('^[ \t]*#[ \t]*include[ \t]+<([\\w./\\\\]+)>', re.M)
+quote_re = re.compile('^[ \t]*#[ \t]*include[ \t]+"([\\w./\\\\]+)"', re.M)
+
+def do_scan(filename, env, args = [SCons.Node.FS.default_fs, ()]):
+
+    fs, cpppath = args
+
+    if fs.File(filename, fs.Top).exists():
+        file = open(filename)
+        contents = file.read()
+        file.close()
+
+        angle_includes = angle_re.findall(contents)
+        quote_includes = quote_re.findall(contents)
+
+	return angle_includes + quote_includes;
+
+    return []
 
 
 # create an environment
 env = Environment(
     ENV = os.environ,
     BUILDERS = Builders,
-#    SCANNERS = Scanners,
     LIBPATH = path.join(NK_MOZ_DIST_BIN, 'lib'))
 
-# process each module
+
+MODULE_INFO = {}
+
+  # map 'nkIInterface.idl' to 'module/idl/nkIInterface.idl'
+INTERFACES = {}
+
+  # map 'nkIInterface.h' to 'build/include/module/nkIInterface.h'
+INTERFACE_HEADERS = {}
+
+  # map 'nkIInterface.idl' to 'build/include/module/nkIInterface.h'
+GEN_INTERFACES = {}
+
+
+# load each module, building a module info database
 for m in MODULES:
     try:
 	# defaults
@@ -98,54 +124,107 @@ for m in MODULES:
 
 	execfile(path.join(m, 'module.py'), locals())
 
-      	# all modules 'require' themselves
-	idl_include = ''
-        include = ''
-	for r in REQUIRES + [m]:
-	    idl_include += '-I ' + path.join(r, 'idl') + ' '
-	    include += '-I ' + path.join(BUILD, 'include', r) + ' '
+	MODULE_INFO[m] = {
+	    'requires':   REQUIRES + [m],  # all modules require themselves
+            'idl_files':  IDL_FILES,
+            'programs':   PROGRAMS,
+            'components': COMPONENTS
+	}
 
-	# clone the environment for each module so we can make REQUIRES do
-	# its job
-	e = env.Copy(
-	    Builders = Builders,
-	    INCLUDE = include,
-	    IDL_INCLUDE = idl_include,
-	    LIBRARIES = 'xpcom.lib user32.lib')
+	for i in IDL_FILES:
+	    idl = i + '.idl'
+            h   = i + '.h'
+	    INTERFACES[idl] = path.join(m, 'idl', idl)
+	    INTERFACE_HEADERS[h] = path.join(BUILD, 'include', m, h)
+	    GEN_INTERFACES[idl] = path.join(BUILD, 'include', m, h)
 
-	# compile (type libraries)/(header files)
-        for i in IDL_FILES:
-            e.TypeLibrary(target = path.join(BUILD, 'bin', 'components', i + '.xpt'),
-                          source = path.join(m, 'idl', i + '.idl'))
-	    e.InterfaceHeader(target = path.join(BUILD, 'include', m, i + '.h'),
-			      source = path.join(m, 'idl', i + '.idl'))
+    except:
+	print "Skipping module: " + m
 
-	# build module programs
-	for i in PROGRAMS:
-	    objects = []
-	    for s in i['sources']:
-		o = path.join(BUILD, 'obj', s + '.obj')
-		e.Object(target = o,
-		         source = path.join(m, 'src', s + '.cpp'))
-		objects.append(o)
 
-	    e.Program(target = path.join(BUILD, 'bin', i['target'] + '.exe'),
-		      source = objects)
+### BUILD DEPENDENCY TREE ###
 
-	# build module components
-	for i in COMPONENTS:
-	    objects = []
-	    for s in i['sources']:
-		srcdir = 'src'
-		if i.has_key('srcdir'):
-		    srcdir = i['srcdir']
-		o = path.join(BUILD, 'obj', s + '.obj')
-		e.Object(target = o,
-			 source = path.join(m, srcdir, s + '.cpp'))
-		objects.append(o)
+for m in MODULES:
+    mi = MODULE_INFO[m]
+    REQUIRES   = mi['requires']
+    IDL_FILES  = mi['idl_files']
+    PROGRAMS   = mi['programs']
+    COMPONENTS = mi['components']
 
-	    e.Component(target = path.join(BUILD, 'bin', 'components', i['target'] + '.dll'),
-			source = objects)
+    idl_include = ''
+    include = ''
+    for r in REQUIRES:
+	idl_include += '-I ' + path.join(r, 'idl') + ' '
+	include += '-I ' + path.join(BUILD, 'include', r) + ' '
 
-    except IOError:
-        sys.stderr.write("Skipping module: %s\n" % m)
+    # clone the environment for each module so we can make REQUIRES do its
+    #job
+    e = env.Copy(
+	INCLUDE = include,
+	IDL_INCLUDE = idl_include,
+	LIBRARIES = 'xpcom.lib user32.lib')
+
+
+    # explicit custom dependency scanner...
+    def explicit_scan(file, env, deplist):
+	deps = do_scan(file, env)
+	for i in deps:
+	    for d in deplist:
+		if d.has_key(i):
+		    env.Depends(file, d[i])
+
+
+    # compile (type libraries)/(header files)
+    for i in IDL_FILES:
+	idl_file = path.join(m, 'idl', i + '.idl')
+
+	# manually scan IDL files for dependencies and explicitly add them
+	explicit_scan(idl_file, e, [INTERFACES, GEN_INTERFACES])
+
+	e.TypeLibrary(
+	    target = path.join(BUILD, 'bin', 'components', i + '.xpt'),
+	    source = idl_file)
+	e.InterfaceHeader(
+	    target = path.join(BUILD, 'include', m, i + '.h'),
+	    source = idl_file)
+
+    # build module programs
+    for i in PROGRAMS:
+	target = i['target'] + '.exe'
+
+	objects = []
+	for s in i['sources']:
+	    source = path.join(m, 'src', s + '.cpp')
+
+	    # explicitly scan source file for interface headers
+	    explicit_scan(source, e, [INTERFACE_HEADERS])
+
+	    o = path.join(BUILD, 'obj', s + '.obj')
+	    e.Object(target = o, source = source)
+	    objects.append(o)
+
+	e.Program(target = path.join(BUILD, 'bin', target),
+		  source = objects)
+
+    # build module components
+    for i in COMPONENTS:
+	target = i['target'] + '.dll'
+
+	srcdir = 'src'
+	if i.has_key('srcdir'):
+	    srcdir = i['srcdir']
+
+	objects = []
+	for s in i['sources']:
+	    source = path.join(m, srcdir, s + '.cpp')
+
+	    # explicitly scan source file for interface headers
+	    explicit_scan(source, e, [INTERFACE_HEADERS])
+
+	    o = path.join(BUILD, 'obj', s + '.obj')
+	    e.Object(target = o, source = source)
+	    objects.append(o)
+
+	e.Component(
+	    target = path.join(BUILD, 'bin', 'components', target),
+	    source = objects)
