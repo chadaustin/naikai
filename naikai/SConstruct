@@ -3,7 +3,10 @@ from os import path
 import os
 import sys
 
+# build/dist directory
 BUILD = 'build'
+
+# find where Mozilla IDL files are installed
 if os.environ.has_key('MOZ_IDL'):
     MOZ_IDL = os.environ['MOZ_IDL']
 else:
@@ -12,33 +15,79 @@ else:
     else:
         MOZ_IDL = '/mozilla/idl'
 
+XPIDL_COMMAND = 'xpidl -I ' + MOZ_IDL + ' $IDL_INCLUDE'
+
 # set default target
 Default(BUILD)
 
-MODULES = [ 'base', 'windowing' ]
-MODULE_INC = ''
-for m in MODULES:
-    MODULE_INC += ' -I ' + path.join(m, 'idl') + ' '
-
+MOZ_INCLUDE = '/I D:/mozilla/mozilla/dist/include/xpcom '
+MOZ_INCLUDE += '/I D:/mozilla/mozilla/dist/include/nspr '
 
 # generate builders
-TypeLibrary = Builder(name = 'TypeLibrary',
-		      action = 'xpidl -I ' + MOZ_IDL + MODULE_INC + ' -m typelib -e $TARGET $SOURCES')
-InterfaceHeader = Builder(name = 'InterfaceHeader',
-		      action = 'xpidl -I ' + MOZ_IDL + MODULE_INC + ' -m header -e $TARGET $SOURCES')
-Builders = [TypeLibrary, InterfaceHeader]
+Builders = [
+    Builder(
+        name = 'TypeLibrary',
+        action = XPIDL_COMMAND + ' -m typelib -e $TARGET $SOURCES'),
+    Builder(
+        name = 'InterfaceHeader',
+        action = XPIDL_COMMAND + ' -m header -e $TARGET $SOURCES'),
+    Builder(
+        name = 'Object',
+        action = 'CL /c /DXP_WIN /DXP_WIN32 /MT /O2 $MOZ_INCLUDE $INCLUDE /Fo$TARGET $SOURCES'),
+    Builder(
+	name = 'Program',
+        action = 'LINK /LIBPATH:$LIBPATH /out:$TARGET $SOURCES $LIBRARIES'),
+]
 
 # create an environment
-env = Environment(ENV = { 'PATH': os.environ['PATH'] }, BUILDERS = Builders)
+env = Environment(
+    ENV = os.environ,
+    BUILDERS = Builders,
+    MOZ_INCLUDE = MOZ_INCLUDE,
+    LIBPATH = 'D:/mozilla/mozilla/dist/WIN32_O.OBJ/lib')
+
+MODULES = [ 'base', 'nrun', 'windowing' ]
 
 for m in MODULES:
     try:
-        file = open(m + '/module.py', 'r')
+	# defaults
+	REQUIRES  = []
+	IDL_FILES = []
+	PROGRAMS  = []
+
+	file = open(m + '/module.py', 'r')
 	exec file in locals()
+	file.close()
+
+      	# all modules 'require' themselves
+	idl_include = ''
+        include = ''
+	for r in REQUIRES + [m]:
+	    idl_include += '-I ' + path.join(r, 'idl') + ' '
+	    include += '-I ' + path.join(BUILD, 'include', r) + ' '
+
+	# clone the environment for each module so we can make REQUIRES do its job
+	e = env.Copy(
+	    INCLUDE = include,
+	    IDL_INCLUDE = idl_include,
+	    LIBRARIES = 'xpcom.lib')
+
         for i in IDL_FILES:
-            env.TypeLibrary(target = path.join(BUILD, 'components', i + '.xpt'),
-                            source = path.join(m, 'idl', i + '.idl'))
-	    env.InterfaceHeader(target = path.join(BUILD, 'include', i + '.h'),
-				source = path.join(m, 'idl', i + '.idl'))
+            e.TypeLibrary(target = path.join(BUILD, 'bin', 'components', i + '.xpt'),
+                          source = path.join(m, 'idl', i + '.idl'))
+	    e.InterfaceHeader(target = path.join(BUILD, 'include', m, i + '.h'),
+			      source = path.join(m, 'idl', i + '.idl'))
+
+	for i in PROGRAMS:
+	    objects = []
+	    for s in i['sources']:
+		o = path.join(m, 'src', s + '.o')
+		e.Object(target = o,
+		           source = path.join(m, 'src', s + '.cpp'))
+		objects.append(o)
+	    e.Program(target = path.join(BUILD, 'bin', i['target'] + '.exe'),
+	              source = objects)
+
     except IOError:
+        sys.stderr.write("Skipping module: %s\n" % m)
         sys.stderr.write("Skipping module: %s\n" % m)

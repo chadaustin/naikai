@@ -1,6 +1,10 @@
+REQUIRES = [
+    'base',
+]
+
 IDL_FILES = [
-    "nkIMenu",
-    "nkIMenuItem",
-    "nkIWindow",
-    "nkIWindowingService",
+    'nkIMenu',
+    'nkIMenuItem',
+    'nkIWindow',
+    'nkIWindowingService',
 ]

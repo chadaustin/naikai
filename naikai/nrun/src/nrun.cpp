@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "nsXPCOM.h"
 #include "nsIServiceManager.h"
 #include "nkIRunnable.h"
 
@@ -10,14 +11,14 @@ static void run(const char* contract_id);
 int main(int argc, char** argv)
 {
   if (argc <= 1) {
-    puts("naikai <contractid>");
+    puts("nrun <contractid>");
     return EXIT_FAILURE;
   }
 
   const char* contract_id = argv[1];
 
   // initialize XPCOM
-  nsresult rv = NS_InitXPCOM(nsnull, nsnull);
+  nsresult rv = NS_InitXPCOM2(nsnull, nsnull, nsnull);
   if (NS_FAILED(rv)) {
     printf("XPCOM initialization failed: [%x]\n", rv);
     return EXIT_FAILURE;

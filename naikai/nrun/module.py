@@ -1,3 +1,10 @@
-process_src([
-    "nrun.cpp",
-])
+REQUIRES = [
+    'base',
+]
+
+PROGRAMS = [
+{
+    'target': 'nrun',
+    'sources': [ 'nrun' ]
+}
+]
